@@ -772,10 +772,12 @@ fn move_visual_line_down(cx: &mut Context) {
 
 
 fn extend_char_left(cx: &mut Context) {
+    cx.editor.using_evil_line_selection = false;
     move_impl(cx, move_horizontally, Direction::Backward, Movement::Extend)
 }
 
 fn extend_char_right(cx: &mut Context) {
+    cx.editor.using_evil_line_selection = false;
     move_impl(cx, move_horizontally, Direction::Forward, Movement::Extend)
 }
 
@@ -832,6 +834,7 @@ fn goto_line_end(cx: &mut Context) {
         view,
         doc,
         if cx.editor.mode == Mode::Select {
+            cx.editor.using_evil_line_selection = false; 
             Movement::Extend
         } else {
             Movement::Move
@@ -893,6 +896,7 @@ fn goto_line_start(cx: &mut Context) {
         view,
         doc,
         if cx.editor.mode == Mode::Select {
+            cx.editor.using_evil_line_selection = false; 
             Movement::Extend
         } else {
             Movement::Move
@@ -3623,10 +3627,7 @@ fn open_above(cx: &mut Context) {
 }
 
 fn normal_mode(cx: &mut Context) {
-    if cx.editor.using_evil_line_selection {
-        cx.editor.needs_redraw = true;
-        cx.editor.using_evil_line_selection = false; 
-    }
+    cx.editor.using_evil_line_selection = false; 
     cx.editor.enter_normal_mode();
 }
 
@@ -6576,6 +6577,8 @@ fn evil_move_word_impl<F>(cx: &mut Context, move_fn: F)
 where
     F: Fn(RopeSlice, Range, usize) -> Range,
 {
+    //not selecting entire line anymore. exit visual line mode
+    cx.editor.using_evil_line_selection = false; 
     let count = cx.count();
     let (view, doc) = current!(cx.editor);
     let text = doc.text().slice(..);
