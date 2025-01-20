@@ -3643,7 +3643,7 @@ fn open_above(cx: &mut Context) {
 }
 
 fn normal_mode(cx: &mut Context) {
-    cx.editor.using_evil_line_selection = false; 
+    evil_extending_normal_mode(cx);
     cx.editor.enter_normal_mode();
 }
 
@@ -6831,4 +6831,36 @@ fn evil_update_last_find_op_prev(editor: &mut Editor, inclusive: bool, ch: char)
             op_type: FindOperationType::PrevChar
         });
     }    
+}
+
+fn evil_extending_normal_mode(cx: &mut Context) {
+    // moves cursor back one when exiting insert mode
+    // unless the cursor is at the start of the line 
+    let count = cx.count();
+    if cx.editor.evil {
+        let (view, doc) = current!(cx.editor);
+        let text = doc.text().slice(..);
+        let selection = doc.selection(view.id).clone().transform(|range| {
+            let line = range.cursor_line(text);
+            let pos = text.line_to_char(line);
+            if range.head != pos && cx.editor.mode != Mode::Normal {
+                let text = doc.text().slice(..);
+                let text_fmt = doc.text_format(view.inner_area(doc).width, None);
+                let mut annotations = view.text_annotations(doc, None);
+                move_horizontally(
+                    text,
+                    range,
+                    Direction::Backward,
+                    count,
+                    Movement::Move,
+                    &text_fmt,
+                    &mut annotations,
+                )
+            } else {
+                range
+            }
+        });
+        doc.set_selection(view.id, selection);
+    }
+    cx.editor.using_evil_line_selection = false; 
 }
